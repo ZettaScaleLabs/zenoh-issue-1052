@@ -1,7 +1,7 @@
 use std::{env, sync::Arc};
 
 use tokio::{task, time};
-use zenoh::prelude::r#async::*;
+use zenoh::{prelude::r#async::*, queryable};
 
 const KEY_EXPR: &str = "slow_queryable";
 const VALUE: &str = "🐢";
@@ -39,7 +39,12 @@ async fn main() {
     let config = Config::from_file(config_path).unwrap();
     let session = Arc::new(zenoh::open(config).res().await.unwrap());
 
+    let mut handles = Vec::new();
     for i in 0..10 {
-        task::spawn(declare_queryable(session.clone(), i));
+        handles.push(task::spawn(declare_queryable(session.clone(), i)));
+    }
+
+    for handle in handles {
+        handle.await.unwrap();
     }
 }
