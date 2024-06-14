@@ -14,7 +14,10 @@ def spawn_procs(n):
 
     for i in range(n):
         procs[i] = subprocess.Popen(
-            ["target/release/fast_get", "peer.vanilla.config.json5"],
+            [
+                "target/release/vanilla_repeated_get",
+                "peer.vanilla.config.json5",
+            ],
             stdout=make_stdout_file(i),
             stderr=make_stderr_file(i),
         )
