@@ -20,6 +20,18 @@ The slow queryable gradually has its channel filled up, until it can no longer r
 But the Zenoh runtime does not enter a deadlock state; the queryable continues to progress until the
 channel size goes back to 0.
 
-#### System information
+### Variations
+
+#### Vanilla w/ `taskset -c 0`
+
+Here we lunch the slow queryable with `taskset -c 0 ./target/release/vanilla_slow_queryable
+vanilla.config.json5`. The slow queryable never sends out any reply.
+The RX threads seem to be forever blocked on `flume::Sender::send`.
+
+#### Vanilla w/ `taskset -c 0-1`
+
+Here we lunch the slow queryable with `taskset -c 0-1 ./target/release/vanilla_slow_queryable vanilla.config.json5`. The results are seemingly exactly the same as without `taskset -c 0-1`.
+
+### System information
 
 Ubuntu 22.04.4 LTS (Linux 5.15.0-25-generic), Intel(R) Xeon(R) CPU E5-2630 v4 @ 2.20GHz, 16G RAM
