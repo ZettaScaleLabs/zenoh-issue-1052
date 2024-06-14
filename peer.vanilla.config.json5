@@ -1,0 +1,5 @@
+{
+  mode: "peer",
+  connect: { endpoints: ["tcp/localhost:7447"] },
+  scouting: { multicast: { enabled: false }, gossip: { enabled: false } },
+}
