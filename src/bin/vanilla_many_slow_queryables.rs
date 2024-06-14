@@ -1,7 +1,7 @@
 use std::{env, sync::Arc};
 
 use tokio::{task, time};
-use zenoh::{prelude::r#async::*, queryable};
+use zenoh::prelude::r#async::*;
 
 const KEY_EXPR: &str = "slow_queryable";
 const VALUE: &str = "🐢";
