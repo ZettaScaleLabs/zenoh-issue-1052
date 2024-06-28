@@ -1,0 +1,35 @@
+{
+  listen: { endpoints: ["tcp/localhost:7447"] },
+  scouting: {
+    multicast: { enabled: false },
+    gossip: { enabled: false },
+  },
+  plugins: {
+    storage_manager: {
+      __path__: [
+        "~/Source/zenoh/target/release/libzenoh_plugin_storage_manager.dylib",
+      ],
+      volumes: {
+        fs: {
+          __path__: [
+            "~/Source/zenoh-backend-filesystem/target/release/libzenoh_backend_fs.dylib",
+          ],
+        },
+      },
+      storages: {
+        issue_1052: {
+          key_expr: "zenoh/issues/1052/*",
+          volume: {
+            id: "fs",
+            dir: "issue-1052",
+          },
+          replica_config: {
+            publication_interval: 20,
+            propagation_delay: 200,
+            delta: 1000,
+          },
+        },
+      },
+    },
+  },
+}

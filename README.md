@@ -355,6 +355,451 @@ Thread 1 (Thread 0x7f8ea7b81d80 (LWP 2988338) "vanilla_many_sl"):
 
 </details>
 
+## Replication
+
+Here a router with a filesystem storage containing 6K files is connected to 50 peers with filesystem
+storages subscribing to the same key expression. All nodes use Zenoh 0.11.0.
+
+### Instructions
+
+1. Build the binary using `cargo build --release --bin replication_put`
+2. Lunch the main router using `zenohd -c replication.config.json5`
+3. Open a python3 REPL and run `import replication; e = replication.Experiment(50)`
+4. Observe peer execution using `tail -f replication/<number>.peer.replication.stdout`
+
+### Results
+
+No storages make progress on replication. Logs show that many sent/received query replies don't have an associated query (the error messages are of the form `Received ReplyData for unkown Query: 20914` and `Route final reply Face{3, cc6d728d780b29ddad1a4b6e9dd4a191}:9 from Face{3, cc6d728d780b29ddad1a4b6e9dd4a191}: Query nof found!`).
+
+<details>
+<summary>Result of `thread apply bt all` in GDB</summary>
+
+```text
+* thread #1, name = 'main', queue = 'com.apple.main-thread', stop reason = signal SIGSTOP
+  * frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x000000010514ce7c zenohd`tokio::runtime::park::Inner::park::h4ecaab8bc3bc595b + 280
+    frame #3: 0x0000000104e929a4 zenohd`zenohd::main::h38e2e8e7ae24c0c6 + 10160
+    frame #4: 0x0000000104dee798 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::he66a75b06fe9e38b + 12
+    frame #5: 0x0000000104ea08d0 zenohd`main + 580
+    frame #6: 0x000000018d8b50e0 dyld`start + 2360
+  thread #2, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000105152388 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 612
+    frame #3: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #4: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #5: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #6: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #7: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #8: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #3, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbfb9c0 libsystem_kernel.dylib`kevent + 8
+    frame #1: 0x000000010514df8c zenohd`tokio::runtime::io::driver::Driver::turn::ha16b0a73be994533 + 544
+    frame #2: 0x000000010514dc4c zenohd`tokio::runtime::time::Driver::park_internal::hfa1f277a9394f133 + 744
+    frame #3: 0x0000000105152460 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 828
+    frame #4: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #5: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #6: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #7: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #8: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #4, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000105152388 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 612
+    frame #3: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #4: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #5: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #6: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #7: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #8: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #5, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000105152388 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 612
+    frame #3: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #4: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #5: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #6: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #7: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #8: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #6, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000105152388 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 612
+    frame #3: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #4: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #5: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #6: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #7: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #8: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #7, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000105152388 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 612
+    frame #3: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #4: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #5: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #6: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #7: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #8: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #8, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000105152388 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 612
+    frame #3: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #4: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #5: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #6: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #7: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #8: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #9, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000105152388 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 612
+    frame #3: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #4: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #5: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #6: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #7: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #8: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #10, name = 'app-0'
+    frame #0: 0x000000018dbfb9c0 libsystem_kernel.dylib`kevent + 8
+    frame #1: 0x000000010514df8c zenohd`tokio::runtime::io::driver::Driver::turn::ha16b0a73be994533 + 544
+    frame #2: 0x000000010514dc4c zenohd`tokio::runtime::time::Driver::park_internal::hfa1f277a9394f133 + 744
+    frame #3: 0x0000000105152460 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 828
+    frame #4: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #5: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #6: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #7: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #8: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #11, name = 'net-0'
+    frame #0: 0x000000018dbfb9c0 libsystem_kernel.dylib`kevent + 8
+    frame #1: 0x000000010514df8c zenohd`tokio::runtime::io::driver::Driver::turn::ha16b0a73be994533 + 544
+    frame #2: 0x000000010514dc4c zenohd`tokio::runtime::time::Driver::park_internal::hfa1f277a9394f133 + 744
+    frame #3: 0x0000000105152460 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 828
+    frame #4: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #5: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #6: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #7: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #8: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #12, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbfb9c0 libsystem_kernel.dylib`kevent + 8
+    frame #1: 0x000000010645cfe4 libzenoh_plugin_storage_manager.dylib`mio::poll::Poll::poll::h54374a4211b12479 + 116
+    frame #2: 0x0000000106453dc0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::io::driver::Driver::turn::ha16b0a73be994533 + 432
+    frame #3: 0x0000000106454fa0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::time::Driver::park_internal::hfa1f277a9394f133 + 680
+    frame #4: 0x0000000106452d74 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 796
+    frame #5: 0x0000000106452124 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 4728
+    frame #6: 0x00000001064563dc libzenoh_plugin_storage_manager.dylib`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 440
+    frame #7: 0x000000010644a8ec libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 492
+    frame #8: 0x000000010644b5a8 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 112
+    frame #9: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #10: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #11: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #12: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #13, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000106452cb0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 600
+    frame #3: 0x0000000106452124 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 4728
+    frame #4: 0x00000001064563dc libzenoh_plugin_storage_manager.dylib`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 440
+    frame #5: 0x000000010644a8ec libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 492
+    frame #6: 0x000000010644b5a8 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 112
+    frame #7: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #9: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #10: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #14, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000106452cb0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 600
+    frame #3: 0x0000000106452124 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 4728
+    frame #4: 0x00000001064563dc libzenoh_plugin_storage_manager.dylib`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 440
+    frame #5: 0x000000010644a8ec libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 492
+    frame #6: 0x000000010644b5a8 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 112
+    frame #7: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #9: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #10: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #15, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000106452cb0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 600
+    frame #3: 0x0000000106452124 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 4728
+    frame #4: 0x00000001064563dc libzenoh_plugin_storage_manager.dylib`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 440
+    frame #5: 0x000000010644a8ec libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 492
+    frame #6: 0x000000010644b5a8 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 112
+    frame #7: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #9: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #10: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #16, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000106452cb0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 600
+    frame #3: 0x0000000106452124 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 4728
+    frame #4: 0x00000001064563dc libzenoh_plugin_storage_manager.dylib`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 440
+    frame #5: 0x000000010644a8ec libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 492
+    frame #6: 0x000000010644b5a8 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 112
+    frame #7: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #9: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #10: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #17, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000106452cb0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 600
+    frame #3: 0x0000000106452124 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 4728
+    frame #4: 0x00000001064563dc libzenoh_plugin_storage_manager.dylib`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 440
+    frame #5: 0x000000010644a8ec libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 492
+    frame #6: 0x000000010644b5a8 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 112
+    frame #7: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #9: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #10: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #18, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000106452cb0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 600
+    frame #3: 0x0000000106452124 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 4728
+    frame #4: 0x00000001064563dc libzenoh_plugin_storage_manager.dylib`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 440
+    frame #5: 0x000000010644a8ec libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 492
+    frame #6: 0x000000010644b5a8 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 112
+    frame #7: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #9: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #10: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #19, name = 'tokio-runtime-worker'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000106452cb0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 600
+    frame #3: 0x0000000106452124 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 4728
+    frame #4: 0x00000001064563dc libzenoh_plugin_storage_manager.dylib`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 440
+    frame #5: 0x000000010644a8ec libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 492
+    frame #6: 0x000000010644b5a8 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 112
+    frame #7: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #9: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #10: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #20, name = 'async-global-executor/tokio'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x000000010644df68 libzenoh_plugin_storage_manager.dylib`tokio::runtime::park::Inner::park::h4ecaab8bc3bc595b + 304
+    frame #3: 0x000000010644099c libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h9f8278e1e2b08271 + 440
+    frame #4: 0x0000000106441f20 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hefcf8905ffa99d61 + 136
+    frame #5: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #6: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #8: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #21, name = 'async-std/runtime'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x00000001064692a8 libzenoh_plugin_storage_manager.dylib`parking::Inner::park::h079c767b3e1422bc + 332
+    frame #3: 0x0000000106447d10 libzenoh_plugin_storage_manager.dylib`async_global_executor::threading::thread_main_loop::h98d37384217a9e08 + 3264
+    frame #4: 0x00000001064407dc libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h8d9400638e2459c8 + 12
+    frame #5: 0x0000000106441e18 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hd02a9e4a0641c4c7 + 96
+    frame #6: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #22, name = 'async-std/runtime'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x00000001064692a8 libzenoh_plugin_storage_manager.dylib`parking::Inner::park::h079c767b3e1422bc + 332
+    frame #3: 0x00000001064474fc libzenoh_plugin_storage_manager.dylib`async_global_executor::threading::thread_main_loop::h98d37384217a9e08 + 1196
+    frame #4: 0x00000001064407dc libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h8d9400638e2459c8 + 12
+    frame #5: 0x0000000106441e18 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hd02a9e4a0641c4c7 + 96
+    frame #6: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #23, name = 'async-std/runtime'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x00000001064692a8 libzenoh_plugin_storage_manager.dylib`parking::Inner::park::h079c767b3e1422bc + 332
+    frame #3: 0x00000001064474fc libzenoh_plugin_storage_manager.dylib`async_global_executor::threading::thread_main_loop::h98d37384217a9e08 + 1196
+    frame #4: 0x00000001064407dc libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h8d9400638e2459c8 + 12
+    frame #5: 0x0000000106441e18 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hd02a9e4a0641c4c7 + 96
+    frame #6: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #24, name = 'async-std/runtime'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x00000001064692a8 libzenoh_plugin_storage_manager.dylib`parking::Inner::park::h079c767b3e1422bc + 332
+    frame #3: 0x00000001064474fc libzenoh_plugin_storage_manager.dylib`async_global_executor::threading::thread_main_loop::h98d37384217a9e08 + 1196
+    frame #4: 0x00000001064407dc libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h8d9400638e2459c8 + 12
+    frame #5: 0x0000000106441e18 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hd02a9e4a0641c4c7 + 96
+    frame #6: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #25, name = 'async-std/runtime'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x00000001064692a8 libzenoh_plugin_storage_manager.dylib`parking::Inner::park::h079c767b3e1422bc + 332
+    frame #3: 0x00000001064474fc libzenoh_plugin_storage_manager.dylib`async_global_executor::threading::thread_main_loop::h98d37384217a9e08 + 1196
+    frame #4: 0x00000001064407dc libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h8d9400638e2459c8 + 12
+    frame #5: 0x0000000106441e18 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hd02a9e4a0641c4c7 + 96
+    frame #6: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #26, name = 'async-io'
+    frame #0: 0x000000018dbf8524 libsystem_kernel.dylib`__psynch_mutexwait + 8
+    frame #1: 0x000000018dc33168 libsystem_pthread.dylib`_pthread_mutex_firstfit_lock_wait + 84
+    frame #2: 0x000000018dc30af8 libsystem_pthread.dylib`_pthread_mutex_firstfit_lock_slow + 248
+    frame #3: 0x000000010646052c libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::hcbb08ab697547c75 + 180
+    frame #4: 0x0000000106460918 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h86322e91f81a3c97 + 100
+    frame #5: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #6: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #8: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #27, name = 'async-std/runtime'
+    frame #0: 0x000000018dbfb9c0 libsystem_kernel.dylib`kevent + 8
+    frame #1: 0x0000000106466318 libzenoh_plugin_storage_manager.dylib`polling::Poller::wait::h1a85dcfa9debac68 + 612
+    frame #2: 0x0000000106465190 libzenoh_plugin_storage_manager.dylib`async_io::reactor::ReactorLock::react::hd554c8b00122a692 + 204
+    frame #3: 0x0000000106447a64 libzenoh_plugin_storage_manager.dylib`async_global_executor::threading::thread_main_loop::h98d37384217a9e08 + 2580
+    frame #4: 0x00000001064407dc libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h8d9400638e2459c8 + 12
+    frame #5: 0x0000000106441e18 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hd02a9e4a0641c4c7 + 96
+    frame #6: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #28, name = 'async-std/runtime'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000106469278 libzenoh_plugin_storage_manager.dylib`parking::Inner::park::h079c767b3e1422bc + 284
+    frame #3: 0x0000000106447d10 libzenoh_plugin_storage_manager.dylib`async_global_executor::threading::thread_main_loop::h98d37384217a9e08 + 3264
+    frame #4: 0x00000001064407dc libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h8d9400638e2459c8 + 12
+    frame #5: 0x0000000106441e18 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hd02a9e4a0641c4c7 + 96
+    frame #6: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #29, name = 'async-std/runtime'
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x0000000106469278 libzenoh_plugin_storage_manager.dylib`parking::Inner::park::h079c767b3e1422bc + 284
+    frame #3: 0x0000000106447d10 libzenoh_plugin_storage_manager.dylib`async_global_executor::threading::thread_main_loop::h98d37384217a9e08 + 3264
+    frame #4: 0x00000001064407dc libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h8d9400638e2459c8 + 12
+    frame #5: 0x0000000106441e18 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hd02a9e4a0641c4c7 + 96
+    frame #6: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #7: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #8: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #30
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x000000018db5d4dc libc++.1.dylib`std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&) + 28
+    frame #3: 0x000000010758cb10 libzenoh_backend_fs.dylib`rocksdb::ThreadPoolImpl::Impl::BGThread(unsigned long) + 304
+    frame #4: 0x000000010758ce78 libzenoh_backend_fs.dylib`rocksdb::ThreadPoolImpl::Impl::BGThreadWrapper(void*) + 124
+    frame #5: 0x000000010758e74c libzenoh_backend_fs.dylib`void* std::__1::__thread_proxy[abi:v160006]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, void (*)(void*), rocksdb::BGThreadMetadata*>>(void*) + 52
+    frame #6: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #31
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x000000018db5d4dc libc++.1.dylib`std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&) + 28
+    frame #3: 0x000000010758cb10 libzenoh_backend_fs.dylib`rocksdb::ThreadPoolImpl::Impl::BGThread(unsigned long) + 304
+    frame #4: 0x000000010758ce78 libzenoh_backend_fs.dylib`rocksdb::ThreadPoolImpl::Impl::BGThreadWrapper(void*) + 124
+    frame #5: 0x000000010758e74c libzenoh_backend_fs.dylib`void* std::__1::__thread_proxy[abi:v160006]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, void (*)(void*), rocksdb::BGThreadMetadata*>>(void*) + 52
+    frame #6: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #32
+    frame #0: 0x000000018dbf906c libsystem_kernel.dylib`__psynch_cvwait + 8
+    frame #1: 0x000000018dc365fc libsystem_pthread.dylib`_pthread_cond_wait + 1228
+    frame #2: 0x00000001074ee530 libzenoh_backend_fs.dylib`rocksdb::port::CondVar::TimedWait(unsigned long long) + 72
+    frame #3: 0x000000010748c0fc libzenoh_backend_fs.dylib`rocksdb::InstrumentedCondVar::TimedWait(unsigned long long) + 240
+    frame #4: 0x00000001073b798c libzenoh_backend_fs.dylib`rocksdb::Timer::Run() + 180
+    frame #5: 0x00000001073b7ebc libzenoh_backend_fs.dylib`void* std::__1::__thread_proxy[abi:v160006]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, void (rocksdb::Timer::*)(), rocksdb::Timer*>>(void*) + 72
+    frame #6: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #33, name = 'net-0'
+    frame #0: 0x000000018dbfb9c0 libsystem_kernel.dylib`kevent + 8
+    frame #1: 0x000000010645cfe4 libzenoh_plugin_storage_manager.dylib`mio::poll::Poll::poll::h54374a4211b12479 + 116
+    frame #2: 0x0000000106453dc0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::io::driver::Driver::turn::ha16b0a73be994533 + 432
+    frame #3: 0x0000000106454fa0 libzenoh_plugin_storage_manager.dylib`tokio::runtime::time::Driver::park_internal::hfa1f277a9394f133 + 680
+    frame #4: 0x0000000106452d74 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 796
+    frame #5: 0x0000000106452124 libzenoh_plugin_storage_manager.dylib`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 4728
+    frame #6: 0x00000001064563dc libzenoh_plugin_storage_manager.dylib`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 440
+    frame #7: 0x000000010644a8ec libzenoh_plugin_storage_manager.dylib`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 492
+    frame #8: 0x000000010644b5a8 libzenoh_plugin_storage_manager.dylib`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 112
+    frame #9: 0x000000010648a12c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h6afbab2daea47eae at boxed.rs:1993:9 [opt]
+    frame #10: 0x000000010648a120 libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c [inlined] _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::h04503fef482f2258 at boxed.rs:1993:9 [opt]
+    frame #11: 0x000000010648a11c libzenoh_plugin_storage_manager.dylib`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c at thread.rs:108:17 [opt]
+    frame #12: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #34, name = 'acc-0'
+    frame #0: 0x000000018dbfb9c0 libsystem_kernel.dylib`kevent + 8
+    frame #1: 0x000000010514df8c zenohd`tokio::runtime::io::driver::Driver::turn::ha16b0a73be994533 + 544
+    frame #2: 0x000000010514dc4c zenohd`tokio::runtime::time::Driver::park_internal::hfa1f277a9394f133 + 744
+    frame #3: 0x0000000105152460 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 828
+    frame #4: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #5: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #6: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #7: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #8: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #35, name = 'tx-0'
+    frame #0: 0x000000018dbfb9c0 libsystem_kernel.dylib`kevent + 8
+    frame #1: 0x000000010514df8c zenohd`tokio::runtime::io::driver::Driver::turn::ha16b0a73be994533 + 544
+    frame #2: 0x000000010514dc4c zenohd`tokio::runtime::time::Driver::park_internal::hfa1f277a9394f133 + 744
+    frame #3: 0x0000000105152460 zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::park_timeout::h801c44da3feda799 + 828
+    frame #4: 0x0000000105151544 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 6080
+    frame #5: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #6: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #7: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #8: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #9: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #36, name = 'rx-0'
+    frame #0: 0x000000018dbf57f0 libsystem_kernel.dylib`semaphore_wait_trap + 8
+    frame #1: 0x000000018da84eac libdispatch.dylib`_dispatch_sema4_wait + 28
+    frame #2: 0x000000018da8555c libdispatch.dylib`_dispatch_semaphore_wait_slow + 132
+    frame #3: 0x0000000106481274 libzenoh_plugin_storage_manager.dylib`std::thread::park::heb7297ced8569b12 [inlined] std::sys::unix::thread_parking::darwin::Parker::park::heb53f2352b15461b at darwin.rs:75:15 [opt]
+    frame #4: 0x0000000106481254 libzenoh_plugin_storage_manager.dylib`std::thread::park::heb7297ced8569b12 at mod.rs:988:9 [opt]
+    frame #5: 0x000000010625de70 libzenoh_plugin_storage_manager.dylib`_$LT$$LP$flume..Sender$LT$T$GT$$C$flume..Receiver$LT$T$GT$$RP$$u20$as$u20$zenoh..handlers..IntoCallbackReceiverPair$LT$T$GT$$GT$::into_cb_receiver_pair::_$u7b$$u7b$closure$u7d$$u7d$::hb9c939c83e495649 + 2068
+    frame #6: 0x000000010630ce80 libzenoh_plugin_storage_manager.dylib`zenoh::session::Session::handle_query::h10b0aa1da465ac19 + 1824
+    frame #7: 0x000000010630f4a4 libzenoh_plugin_storage_manager.dylib`_$LT$zenoh..session..Session$u20$as$u20$zenoh..net..primitives..Primitives$GT$::send_request::h4fb72a0a9d0f6c48 + 800
+    frame #8: 0x0000000106313090 libzenoh_plugin_storage_manager.dylib`_$LT$zenoh..session..Session$u20$as$u20$zenoh..net..primitives..EPrimitives$GT$::send_request::hee14d8af4e37f50a + 52
+    frame #9: 0x00000001051e09c0 zenohd`zenoh::net::routing::dispatcher::queries::route_query::hfe67b623f89a2436 + 7284
+    frame #10: 0x00000001051c8510 zenohd`_$LT$zenoh..net..routing..dispatcher..face..Face$u20$as$u20$zenoh..net..primitives..Primitives$GT$::send_request::ha443a5b943bde6c2 + 172
+    frame #11: 0x000000010532c8bc zenohd`_$LT$zenoh..net..primitives..demux..DeMux$u20$as$u20$zenoh_transport..TransportPeerEventHandler$GT$::handle_message::h05c55ffa741c657d + 1532
+    frame #12: 0x00000001054dffb4 zenohd`_$LT$tokio_util..task..task_tracker..TrackedFuture$LT$F$GT$$u20$as$u20$core..future..future..Future$GT$::poll::hbd274cd68de3412d + 7468
+    frame #13: 0x00000001054dc3c4 zenohd`tokio::runtime::task::raw::poll::he927c67a6c0dd820 + 468
+    frame #14: 0x0000000105152afc zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::run_task::h71fbede03b2fd8aa + 500
+    frame #15: 0x0000000105151210 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 5260
+    frame #16: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #17: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #18: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #19: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #20: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+  thread #37, name = 'rx-1'
+    frame #0: 0x000000018dbf57f0 libsystem_kernel.dylib`semaphore_wait_trap + 8
+    frame #1: 0x000000018da84eac libdispatch.dylib`_dispatch_sema4_wait + 28
+    frame #2: 0x000000018da8555c libdispatch.dylib`_dispatch_semaphore_wait_slow + 132
+    frame #3: 0x0000000106481274 libzenoh_plugin_storage_manager.dylib`std::thread::park::heb7297ced8569b12 [inlined] std::sys::unix::thread_parking::darwin::Parker::park::heb53f2352b15461b at darwin.rs:75:15 [opt]
+    frame #4: 0x0000000106481254 libzenoh_plugin_storage_manager.dylib`std::thread::park::heb7297ced8569b12 at mod.rs:988:9 [opt]
+    frame #5: 0x000000010625de70 libzenoh_plugin_storage_manager.dylib`_$LT$$LP$flume..Sender$LT$T$GT$$C$flume..Receiver$LT$T$GT$$RP$$u20$as$u20$zenoh..handlers..IntoCallbackReceiverPair$LT$T$GT$$GT$::into_cb_receiver_pair::_$u7b$$u7b$closure$u7d$$u7d$::hb9c939c83e495649 + 2068
+    frame #6: 0x000000010630ce80 libzenoh_plugin_storage_manager.dylib`zenoh::session::Session::handle_query::h10b0aa1da465ac19 + 1824
+    frame #7: 0x000000010630f4a4 libzenoh_plugin_storage_manager.dylib`_$LT$zenoh..session..Session$u20$as$u20$zenoh..net..primitives..Primitives$GT$::send_request::h4fb72a0a9d0f6c48 + 800
+    frame #8: 0x0000000106313090 libzenoh_plugin_storage_manager.dylib`_$LT$zenoh..session..Session$u20$as$u20$zenoh..net..primitives..EPrimitives$GT$::send_request::hee14d8af4e37f50a + 52
+    frame #9: 0x00000001051e09c0 zenohd`zenoh::net::routing::dispatcher::queries::route_query::hfe67b623f89a2436 + 7284
+    frame #10: 0x00000001051c8510 zenohd`_$LT$zenoh..net..routing..dispatcher..face..Face$u20$as$u20$zenoh..net..primitives..Primitives$GT$::send_request::ha443a5b943bde6c2 + 172
+    frame #11: 0x000000010532c8bc zenohd`_$LT$zenoh..net..primitives..demux..DeMux$u20$as$u20$zenoh_transport..TransportPeerEventHandler$GT$::handle_message::h05c55ffa741c657d + 1532
+    frame #12: 0x00000001054dffb4 zenohd`_$LT$tokio_util..task..task_tracker..TrackedFuture$LT$F$GT$$u20$as$u20$core..future..future..Future$GT$::poll::hbd274cd68de3412d + 7468
+    frame #13: 0x00000001054dc3c4 zenohd`tokio::runtime::task::raw::poll::he927c67a6c0dd820 + 468
+    frame #14: 0x0000000105152afc zenohd`tokio::runtime::scheduler::multi_thread::worker::Context::run_task::h71fbede03b2fd8aa + 500
+    frame #15: 0x0000000105151210 zenohd`tokio::runtime::scheduler::multi_thread::worker::run::h5ffa83a70a59d44b + 5260
+    frame #16: 0x00000001051585e8 zenohd`tokio::runtime::task::raw::poll::h1dca2030075632b5 + 724
+    frame #17: 0x0000000105147230 zenohd`std::sys_common::backtrace::__rust_begin_short_backtrace::h7347c99c1faf3337 + 508
+    frame #18: 0x0000000105146f60 zenohd`core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h2834d56fb80041a5 + 288
+    frame #19: 0x0000000105143620 zenohd`std::sys::unix::thread::Thread::new::thread_start::h143a83d9ede86d5c + 48
+    frame #20: 0x000000018dc36034 libsystem_pthread.dylib`_pthread_start + 136
+```
+
+</details>
+
 ### System information
 
 Ubuntu 22.04.4 LTS (Linux 5.15.0-25-generic), Intel(R) Xeon(R) CPU E5-2630 v4 @ 2.20GHz, 16G RAM
