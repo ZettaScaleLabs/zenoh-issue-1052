@@ -7,7 +7,14 @@ edition = "2021"
 console-subscriber = "0.3.0"
 futures = "0.3.30"
 tokio = "1.35.1"
-# zenoh = "=0.11.0-rc.3"
-# zenoh-util = "=0.11.0-rc.3"
-zenoh = { git = "https://github.com/ZettaScaleLabs/zenoh.git", branch = "issue-1052-hotfix" }
-zenoh-util = { git = "https://github.com/ZettaScaleLabs/zenoh.git", branch = "issue-1052-hotfix" }
+tracing-subscriber = "0.3.18"
+# zenoh = "=0.11.0"
+# zenoh-util = "=0.11.0"
+# zenoh-runtime = "=0.11.0"
+# zenoh = { git = "https://github.com/ZettaScaleLabs/zenoh.git", branch = "issue-1052-hotfix-0.11.0" }
+# zenoh-util = { git = "https://github.com/ZettaScaleLabs/zenoh.git", branch = "issue-1052-hotfix-0.11.0" }
+# zenoh = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "dev/1.0.0" }
+# zenoh-util = { git = "https://github.com/eclipse-zenoh/zenoh.git", branch = "dev/1.0.0" }
+zenoh = { git = "https://github.com/ZettaScaleLabs/zenoh.git", branch = "instrumentation" }
+zenoh-runtime = { git = "https://github.com/ZettaScaleLabs/zenoh.git", branch = "instrumentation" }
+zenoh-util = { git = "https://github.com/ZettaScaleLabs/zenoh.git", branch = "instrumentation" }

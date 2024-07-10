@@ -27,19 +27,11 @@ def make_config(i):
                 "__path__": [
                     "~/Source/zenoh/target/release/libzenoh_plugin_storage_manager.dylib",
                 ],
-                "volumes": {
-                    "fs": {
-                        "__path__": [
-                            "~/Source/zenoh-backend-filesystem/target/release/libzenoh_backend_fs.dylib",
-                        ],
-                    },
-                },
                 "storages": {
                     "issue_1052": {
                         "key_expr": "zenoh/issues/1052/*",
                         "volume": {
-                            "id": "fs",
-                            "dir": f"issue-1052-{i}",
+                            "id": "memory",
                         },
                         "replica_config": {
                             "publication_interval": 20,
